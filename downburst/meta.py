@@ -13,18 +13,6 @@ def get_ssh_pubkey():
         return f.readline().rstrip('\n')
 
 
-KEYURL='https://git.ceph.com/?p=keys.git;a=blob_plain;f=ssh/teuthology-ubuntu.pub;hb=HEAD'
-
-def keyfetch():
-    print "Fetching default SSH key from "+KEYURL
-    r = requests.get(KEYURL)
-    r.raise_for_status()
-    gitkey = r.content
-    if "ssh-" in gitkey:
-        return gitkey
-    else:
-        raise Exception(KEYURL+" does not appear to contain an SSH key.")
-
 def gen_meta(
     name,
     extra_meta,
@@ -38,10 +26,6 @@ def gen_meta(
     ssh_pubkey = get_ssh_pubkey()
     if ssh_pubkey is not None:
         meta_data['public-keys'].append(ssh_pubkey)
-
-    if not nokey:
-        ssh_gitkey = keyfetch()
-        meta_data['public-keys'].append(ssh_gitkey)
 
     for path in extra_meta:
         with file(path) as f:
