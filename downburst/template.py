@@ -203,20 +203,37 @@ def domain(
     # </interface>
     if networks is None:
         networks = [{}]
+
     for net in networks:
-        net_elem = etree.SubElement(
-            devices,
-            'interface',
-            type='network',
-            )
-        etree.SubElement(net_elem, 'model', type='virtio')
-        etree.SubElement(
-            net_elem,
-            'source',
-            network=net.get('source', 'default'),
-            )
+        net_elem = None
+
+        if net.get('type', 'host-only') == 'host-only':
+            net_elem = etree.SubElement(
+                devices,
+                'interface',
+                type='network',
+                )
+            etree.SubElement(net_elem, 'model', type='virtio')
+            etree.SubElement(
+                net_elem,
+                'source',
+                network=net.get('source', 'default'),
+                )
+        elif net.get('type') == 'bridge':
+            net_elem = etree.SubElement(
+                devices,
+                'interface',
+                type='bridge',
+                )
+            etree.SubElement(net_elem, 'model', type='virtio')
+            etree.SubElement(
+                net_elem,
+                'source',
+                bridge=net.get('source', 'br0'),
+                )
+
         mac = net.get('mac')
-        if mac is not None:
+        if mac is not None and net_elem is not None:
             # <mac address='52:54:00:01:02:03'/>
             etree.SubElement(net_elem, 'mac', address=mac)
 
