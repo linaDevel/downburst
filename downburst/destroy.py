@@ -106,11 +106,14 @@ def destroy(args):
                 name=args.name,
                 vol_name=vol_name,
                 ):
-                log.debug('Deleting volume: %r', vol_name)
-                vol = pool.storageVolLookupByName(vol_name)
-                vol.delete(flags=0)
-                syslog_message = 'Deleted existing volume: {volume}'.format(volume=vol_name)
-                syslog.syslog(syslog.LOG_ERR, syslog_message)
+                try:
+                  log.debug('Deleting volume: %r', vol_name)
+                  vol = pool.storageVolLookupByName(vol_name)
+                  vol.delete(flags=0)
+                  syslog_message = 'Deleted existing volume: {volume}'.format(volume=vol_name)
+                  syslog.syslog(syslog.LOG_ERR, syslog_message)
+                except:
+                  log.error("Unable to delete volume: %r", vol_name)
 
 
 
