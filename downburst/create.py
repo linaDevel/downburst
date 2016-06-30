@@ -6,13 +6,11 @@ import os
 from lxml import etree
 
 from . import dehumanize
-from . import image
 from . import iso
 from . import exc
 from . import meta
 from . import template
 from . import wait
-from . import discover
 
 log = logging.getLogger(__name__)
 
@@ -34,36 +32,10 @@ def create(args):
         extra_user=args.user_data,
         )
 
-    if args.distro:
-        distro = args.distro
+    if args.image:
+        image = args.image
     else:
-        distro = meta_data.get('downburst', {}).get('distro')
-
-    if distro is None:
-        distro = "ubuntu"
-
-    if args.distroversion:
-        distroversion = args.distroversion
-    else:
-        distroversion = meta_data.get('downburst', {}).get('distroversion')
-
-    # If ubuntu distroversion contains non version (IE: quantal) convert to version:
-    if distroversion:
-        if distro == 'ubuntu' and ('.' not in distroversion):
-            handler = discover.UbuntuHandler()
-            distroversion = handler.get_version(distroversion)
-
-    if distroversion is None:
-        defaultversion = dict(
-            ubuntu="12.04",
-            fedora="17",
-            centos="6.3",
-            opensuse="12.2",
-            sles="11-sp2",
-            rhel="6.3",
-            debian='6.0'
-            )
-        distroversion = defaultversion[distro]
+        image = meta_data.get('downburst', {}).get('image')
 
     if args.arch:
         arch = args.arch
@@ -94,7 +66,14 @@ def create(args):
     if not pool:
         pool = conn.storagePoolLookupByName('default')
 
-    vol, raw = image.ensure_cloud_image(pool=pool, distro=distro, distroversion=distroversion, arch=arch, forcenew=args.forcenew)
+    vol = None
+    raw = False
+
+    if image is not None:
+        # all done
+        if image.endswith('.raw'):
+           raw = True
+        vol = pool.storageVolLookupByName(image)
 
     if args.wait:
         user_data.append("""\
@@ -232,7 +211,7 @@ exec eject /dev/cdrom
 
 def make(parser):
     """
-    Create an Ubuntu Cloud Image vm
+    Create an Cloud-ready Image vm
     """
     parser.add_argument(
         '--user-data',
@@ -252,19 +231,9 @@ def make(parser):
         help='wait for VM to initialize',
         )
     parser.add_argument(
-        '--distro',
-        metavar='DISTRO',
-        help='Distribution of the vm',
-        )
-    parser.add_argument(
-        '--distroversion',
-        metavar='DISTROVERSION',
-        help='Distribution version of the vm',
-        )
-    parser.add_argument(
-        '--nokey',
-        action='store_true',
-        help='Do not add the default ssh key (from Inktank teuthology) to authorized_hosts. Should be used for non-Inktank machines',
+        '--image',
+        metavar='IMAGE',
+        help='Image of the vm',
         )
     parser.add_argument(
         '--forcenew',
